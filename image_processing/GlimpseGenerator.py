@@ -2,6 +2,7 @@ import math
 import numpy as np
 
 from image_processing import visualizer
+from image_processing import draw
 
 class GlimpseGenerator():
     def __init__(self):
@@ -50,3 +51,10 @@ if __name__ == '__main__':
     print(glimpse)
     size = int(math.sqrt(len(img)))
     visualizer.show_image(np.reshape(img, (size, size)))
+
+    # test one iteration
+    draw.draw_circle(np.reshape(img, (size, size)), 10, 10, 2)
+    # test multiple iterations
+    r = [0, 1, 2, 3, 4]
+    for img in x_train[r]:
+        draw.draw_circle(np.reshape(img, (size, size)), 10, 10, 2)
