@@ -39,9 +39,9 @@ def create_lattice(x, y, stride, length):
 
     indices = []
     range_min_to_max = stride * length
-    start_x = x - range_min_to_max / 2
     start_y = y - range_min_to_max / 2
     for i in range(length):
+        start_x = x - range_min_to_max / 2
         for j in range(length):
             indices.append((start_x, start_y))
             start_x += stride
