@@ -15,6 +15,15 @@ class GlimpseGenerator():
         sx, sy - arrays of relative position of the kernels in the glimpse
         sdx, sdy - standard deviations of the kernels
         '''
+
+        # TODO - clipping the input might not be the correct way to approach this...
+        cx = np.clip(cx, 0, None)
+        cy = np.clip(cy, 0, None)
+        sx = np.clip(sx, 0, None)
+        sy = np.clip(sy, 0, None)
+        sdx = np.clip(sdx, 0, None)
+        sdy = np.clip(sdy, 0, None)
+
         # Assert that we have a square image
         assert(int(math.sqrt(len(image))) == math.sqrt(int(len(image))))
         # Assert that the length of the xs and ys match

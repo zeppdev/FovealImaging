@@ -31,7 +31,7 @@ def runExperiment(agent, **args):
     # hyperparameters
     npop = 50  # population size
     sigma = 0.1  # noise standard deviation
-    alpha = 0.1
+    alpha = 0.003
     alpha_decay = 0.95
     alpha_decay_step = 10
     alpha_decay_stop = 0.003
@@ -47,10 +47,9 @@ def runExperiment(agent, **args):
         if i % alpha_decay_step == 0 and alpha >= alpha_decay_stop:
             alpha *= alpha_decay
 
-        rewards.append(f(w, **args))
-        # rewards.append(f(w, **args_with_graphics)) # if we want to see preliminary results
+        rewards.append(f(agent, w, **args))
         # print current fitness with the population average
-        if i % 5 == 0:
+        if i % 1 == 0:
             print('epoch %d. w: %s, reward: %f' % (i, str(w), rewards[i]))
 
         # initialize memory for a population of w's, and their rewards
