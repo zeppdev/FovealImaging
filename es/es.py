@@ -22,7 +22,7 @@ def f(agent, w, epoch, **args):
 
     # Do not initialize the kernel on 1st epoch
     agent.set_weights(w, epoch == 0)
-    agent.train()
+    agent.train(epoch)
     return agent.get_score()
 
 
@@ -30,14 +30,14 @@ def runExperiment(agent, **args):
     start_time = time.time()
 
     # hyperparameters
-    npop = 50  # population size
+    npop = 20  # population size
     sigma = 0.1  # noise standard deviation
     alpha = 0.1
     alpha_decay = 0.95
     alpha_decay_step = 10
     alpha_decay_stop = 0.003
 
-    nr_epochs = 20
+    nr_epochs = 100
     weights_size = agent.get_weights_size()
 
     w = np.random.randn(weights_size)  # our initial guess is random
