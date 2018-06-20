@@ -2,7 +2,6 @@ import argparse
 from optparse import OptionParser
 
 import numpy as np
-import pacman
 import sys, os
 import matplotlib.pyplot as plt
 import pickle
@@ -30,14 +29,14 @@ def runExperiment(agent, **args):
     start_time = time.time()
 
     # hyperparameters
-    npop = 20  # population size
+    npop = 1  # population size
     sigma = 0.1  # noise standard deviation
     alpha = 0.1
     alpha_decay = 0.95
     alpha_decay_step = 10
     alpha_decay_stop = 0.003
 
-    nr_epochs = 100
+    nr_epochs = 10
     weights_size = agent.get_weights_size()
 
     w = np.random.randn(weights_size)  # our initial guess is random
@@ -49,6 +48,8 @@ def runExperiment(agent, **args):
             alpha *= alpha_decay
 
         rewards.append(f(agent, w, i, **args))
+        agent.visualize()
+
         # print current fitness with the population average
         if i % 1 == 0:
             print('epoch %d. w: %s, reward: %f' % (i, str(w), rewards[i]))
