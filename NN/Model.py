@@ -21,7 +21,7 @@ class Model():
         self.k_size = 8
 
         self.rnn_timesteps = 4
-        self.rnn_layers = [512, 512]
+        self.rnn_layers = [150, 150]
         self.rnn_activation = 'relu'
 
         self.with_zoom = False
