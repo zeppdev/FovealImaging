@@ -8,17 +8,18 @@ def draw_circle(img, xs, ys, radius):
     :param xs: pixel position
     :param ys: pixel position
     :param radius:  size of radius
-    :return: the image
+    :return:
     '''
-    im = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
-    im = cv.circle(im, (xs, ys), radius, (0, 0, 255), 1)
+    #img = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
+    im = cv.circle(img, (xs, ys), radius, (0, 0, 255), -1)
 
     #Display using matplotlib
     #plt.imshow(im)
     #plt.show()
 
+    # Display using opencv
     imS = cv.resize(im, (250, 250))  # Resize window
-    return imS
+    cv.imshow('Image', im)
 
 
 # Testing
@@ -49,6 +50,13 @@ def create_lattice(x, y, stride, length):
     return indices
 
 
+
 # Testing
+
+img = np.zeros((512, 512, 3), np.uint8)
+overlay_t = cv.imread('../data/five.png', -1)  # -1 loads with transparency
+
 indices = create_lattice(10, 10, 1, 12)
-print(indices)
+
+for i in range(len(indices)):
+    draw_circle(img, int(indices[i][0]), int(indices[i][1]), 2)
