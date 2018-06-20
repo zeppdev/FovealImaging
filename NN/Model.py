@@ -38,8 +38,8 @@ class Model():
         self.init_networks()
 
     def init_weight_sizes(self):
-        # 4 because we need x, y coordinates and std in both directions
-        self.kernel_weight_size = 4 * self.k_size ** 2
+        # 3 because we need x, y coordinates and std in both directions
+        self.kernel_weight_size = 3 * self.k_size ** 2
         self.rnn_weight_size = self.k_size ** 2 * self.rnn_layers[0] + self.rnn_layers[0] * self.rnn_layers[1]
         # x, y, (zoom) of full lattice
         self.control_weight_size = self.rnn_layers[1] * self.control_output
@@ -81,12 +81,12 @@ class Model():
             # initial settings
             lattice = create_lattice(1, 1, 2, self.k_size)
             print(lattice)
-            self.kernel_weights = np.empty((self.k_size ** 2, 4))
+            self.kernel_weights = np.empty((self.k_size ** 2, 3))
             for i in range(len(self.kernel_weights)):
-                self.kernel_weights[i] = [lattice[i][0], lattice[i][1], self.kernel_init_std, self.kernel_init_std]
+                self.kernel_weights[i] = [lattice[i][0], lattice[i][1], self.kernel_init_std]
             self.kernel_weights = self.kernel_weights.T
         else:
-            self.kernel_weights = np.reshape(weights[:k], (4, -1))
+            self.kernel_weights = np.reshape(weights[:k], (3, -1))
         rnn_weights = weights[k: k + r]
         self.rnn_weights = []
         w = self.rnn_model.get_weights()
@@ -124,7 +124,7 @@ class Model():
                     k = self.kernel_weights
 
                     glimpse_ = GlimpseGenerator().get_glimpse(img, self.lattice[0], self.lattice[1], k[0], k[1], k[2],
-                                                              k[3])
+                                                              k[2])
                     # print("Glimpse:")
                     # print(glimpse_)
                     K.set_value(glimpse, glimpse_.reshape((1, 1, self.k_size ** 2)))
@@ -147,6 +147,9 @@ class Model():
         # print("acc: {}".format(self.accuracy))
 
     def test(self):
+        pass
+
+    def visualize(self, ):
         pass
 
 
