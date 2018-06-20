@@ -20,6 +20,7 @@ def draw_circle(img, xs, ys, radius):
     # Display using opencv
     imS = cv.resize(im, (250, 250))  # Resize window
     cv.imshow('Image', im)
+    return imS
 
 
 # Testing
@@ -52,11 +53,11 @@ def create_lattice(x, y, stride, length):
 
 
 # Testing
+if __name__ == '__main__':
+    img = np.zeros((512, 512, 3), np.uint8)
+    overlay_t = cv.imread('../data/five.png', -1)  # -1 loads with transparency
 
-img = np.zeros((512, 512, 3), np.uint8)
-overlay_t = cv.imread('../data/five.png', -1)  # -1 loads with transparency
+    indices = create_lattice(10, 10, 1, 12)
 
-indices = create_lattice(10, 10, 1, 12)
-
-for i in range(len(indices)):
-    draw_circle(img, int(indices[i][0]), int(indices[i][1]), 2)
+    for i in range(len(indices)):
+        draw_circle(img, int(indices[i][0]), int(indices[i][1]), 2)

@@ -8,6 +8,8 @@ import pickle
 
 import time
 
+from image_processing.draw import create_lattice
+
 LOGGING_ON = False
 np.random.seed(6)
 
@@ -20,7 +22,17 @@ def f(agent, w, epoch, **args):
     # ... 3) sum up and return the total reward
 
     # Do not initialize the kernel on 1st epoch
-    agent.set_weights(w, epoch == 0)
+    if epoch == 0:
+        # initial settings
+        lattice = create_lattice(1, 1, 2, agent.k_size)
+        # print(lattice)
+        kernel_weights = np.empty((agent.k_size ** 2, 3))
+        for i in range(len(kernel_weights)):
+            kernel_weights[i] = [lattice[i][0], lattice[i][1], agent.kernel_init_std]
+        kernel_weights = kernel_weights.T
+        w[:kernel_weights.size] = kernel_weights.flatten()
+
+    agent.set_weights(w)
     agent.train(epoch)
     return agent.get_score()
 
@@ -29,14 +41,14 @@ def runExperiment(agent, **args):
     start_time = time.time()
 
     # hyperparameters
-    npop = 1  # population size
+    npop = 30  # population size
     sigma = 0.1  # noise standard deviation
     alpha = 0.1
     alpha_decay = 0.95
     alpha_decay_step = 10
     alpha_decay_stop = 0.003
 
-    nr_epochs = 10
+    nr_epochs = 100
     weights_size = agent.get_weights_size()
 
     w = np.random.randn(weights_size)  # our initial guess is random
@@ -48,7 +60,7 @@ def runExperiment(agent, **args):
             alpha *= alpha_decay
 
         rewards.append(f(agent, w, i, **args))
-        agent.visualize()
+        agent.visualize(i)
 
         # print current fitness with the population average
         if i % 1 == 0:
@@ -70,7 +82,7 @@ def runExperiment(agent, **args):
         # is just an efficient way to sum up all the rows of the noise matrix N,
         # where each row N[j] is weighted by A[j]
         w = w + alpha / (npop * sigma) * np.dot(N.T, A)
-        if i % 100 == 0:
+        if i % 5 == 0:
             weights.append(w)
 
     res_directory = "results/"

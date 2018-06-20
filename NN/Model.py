@@ -4,12 +4,11 @@ import cv2
 import numpy as np
 
 import keras.backend as K
+import time
 from keras import Sequential, Input
 from keras.layers import RNN, Dense, SimpleRNN, Masking, LSTM, TimeDistributed
 from image_processing import mnist_loader
 from image_processing.GlimpseGenerator import GlimpseGenerator
-from image_processing.draw import create_lattice, draw_circle
-
 
 class Model():
 
@@ -22,7 +21,7 @@ class Model():
         self.k_size = 8
 
         self.rnn_timesteps = 4
-        self.rnn_layers = [128, 128]
+        self.rnn_layers = [512, 512]
         self.rnn_activation = 'relu'
 
         self.with_zoom = False
@@ -31,7 +30,7 @@ class Model():
         self.batch_size = 128
         self.path_to_images = "data/mnist/mnist.pkl"
         self.image_size = 28
-        self.nr_of_classes = 2
+        self.nr_of_classes = 10
 
         self.init_image_loader()
         self.init_weight_sizes()
@@ -52,41 +51,22 @@ class Model():
                                      input_shape=(self.rnn_timesteps, self.k_size ** 2), return_sequences=True))
         self.rnn_model.add(SimpleRNN(self.rnn_layers[1], activation=self.rnn_activation))
         self.rnn_model.summary()
-        # TODO -  ADD BIAS!
+
         self.control = Sequential([Dense(units=self.control_output, input_dim=self.rnn_layers[-1], use_bias=False)])
         self.control.summary()
-        # TODO -  ADD BIAS!
         self.classifier = Sequential([Dense(units=self.nr_of_classes, input_dim=self.rnn_layers[-1], use_bias=False)])
         self.classifier.summary()
 
     def init_image_loader(self):
         self.train_x, self.train_y, self.test_x, self.test_y = mnist_loader.load(self.path_to_images)
-
-        # Filter classes
-        filter = np.where((self.train_y == 1) | (self.train_y == 8))
-        self.train_x = self.train_x[filter]
-        self.train_y = self.train_y[filter]
-
-        self.train_y[self.train_y == 1] = 0
-        self.train_y[self.train_y == 8] = 1
-
         middle = math.sqrt(len(self.train_x[0])) / 2
         self.lattice = [middle, middle]
 
     # If init_kernel, we ignore the input and set the kernel positions
-    def set_weights(self, weights, init_kernel=False):
+    def set_weights(self, weights):
         k, r, co, cl = self.kernel_weight_size, self.rnn_weight_size, self.control_weight_size, self.classifier_weight_size
-        # 4, because x, y, std x, std y
-        if init_kernel:
-            # initial settings
-            lattice = create_lattice(1, 1, 2, self.k_size)
-            print(lattice)
-            self.kernel_weights = np.empty((self.k_size ** 2, 3))
-            for i in range(len(self.kernel_weights)):
-                self.kernel_weights[i] = [lattice[i][0], lattice[i][1], self.kernel_init_std]
-            self.kernel_weights = self.kernel_weights.T
-        else:
-            self.kernel_weights = np.reshape(weights[:k], (3, -1))
+        # 3, because x, y, std
+        self.kernel_weights = np.reshape(weights[:k], (3, -1))
         rnn_weights = weights[k: k + r]
         self.rnn_weights = []
         w = self.rnn_model.get_weights()
@@ -149,14 +129,13 @@ class Model():
     def test(self):
         pass
 
-    def visualize(self):
+    def visualize(self, epoch):
         scale = 20
         img = np.zeros((scale *self.image_size, scale*self.image_size, 3) ,np.uint8)
         for i in self.kernel_weights.T:
-            print(i[0], i[1])
-            draw_circle(img, int((self.image_size / 2 - int(i[0])) * scale), int((self.image_size / 2 - int(i[1])) * scale), abs(int(i[2] * scale)))
-
-        cv2.waitKey(0)
+            img = cv2.circle(img, (int((self.image_size / 2 - int(i[0])) * scale), int((self.image_size / 2 - int(i[1])) * scale)), abs(int(i[2] * scale)), (0, 0, 255), -1)
+        cv2.imwrite("results/lattice-epoch_{}-{}.png".format(epoch, str(time.time())[-5:]), img)
+        # cv2.waitKey(0)
 
 
 if __name__ == '__main__':
