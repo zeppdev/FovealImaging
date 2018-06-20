@@ -149,8 +149,14 @@ class Model():
     def test(self):
         pass
 
-    def visualize(self, ):
-        pass
+    def visualize(self):
+        scale = 20
+        img = np.zeros((scale *self.image_size, scale*self.image_size, 3) ,np.uint8)
+        for i in self.kernel_weights.T:
+            print(i[0], i[1])
+            draw_circle(img, int((self.image_size / 2 - int(i[0])) * scale), int((self.image_size / 2 - int(i[1])) * scale), abs(int(i[2] * scale)))
+
+        cv2.waitKey(0)
 
 
 if __name__ == '__main__':
