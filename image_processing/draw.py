@@ -8,7 +8,7 @@ def draw_circle(img, xs, ys, radius):
     :param xs: pixel position
     :param ys: pixel position
     :param radius:  size of radius
-    :return:
+    :return: the image
     '''
     im = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
     im = cv.circle(im, (xs, ys), radius, (0, 0, 255), 1)
@@ -18,8 +18,7 @@ def draw_circle(img, xs, ys, radius):
     #plt.show()
 
     imS = cv.resize(im, (250, 250))  # Resize window
-    cv.imshow('Image', imS)
-    cv.waitKey(0)
+    return imS
 
 
 # Testing
@@ -43,7 +42,7 @@ def create_lattice(x, y, stride, length):
     for i in range(length):
         start_x = x - range_min_to_max / 2
         for j in range(length):
-            indices.append((start_x, start_y))
+            indices.append((int(start_x), int(start_y)))
             start_x += stride
         start_y += stride
 

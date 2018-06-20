@@ -19,10 +19,8 @@ class GlimpseGenerator():
         # TODO - clipping the input might not be the correct way to approach this...
         cx = np.clip(cx, 0, None)
         cy = np.clip(cy, 0, None)
-        sx = np.clip(sx, 0, None)
-        sy = np.clip(sy, 0, None)
-        sdx = np.clip(sdx, 0, None)
-        sdy = np.clip(sdy, 0, None)
+        sdx = np.abs(sdx)
+        sdy = np.abs(sdy)
 
         # Assert that we have a square image
         assert(int(math.sqrt(len(image))) == math.sqrt(int(len(image))))
@@ -39,6 +37,8 @@ class GlimpseGenerator():
         image = np.reshape(image, newshape=(size, size))
         rx = self.get_gaussian_pixel(cx, sx, sdx)
         ry = self.get_gaussian_pixel(cy, sy, sdy)
+        rx = np.clip(rx, 0, size-1)
+        ry = np.clip(ry, 0, size-1)
         # FIXME - take care of the edges of the image - out of bounds error?
         return image[rx][ry]
 

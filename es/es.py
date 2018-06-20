@@ -14,13 +14,14 @@ np.random.seed(6)
 
 
 # the function we want to optimize
-def f(agent, w, **args):
+def f(agent, w, epoch, **args):
     # here we would normally:
     # ... 1) create a neural network with weights w
     # ... 2) run the neural network on the environment for some time
     # ... 3) sum up and return the total reward
 
-    agent.set_weights(w)
+    # Do not initialize the kernel on 1st epoch
+    agent.set_weights(w, epoch == 0)
     agent.train()
     return agent.get_score()
 
@@ -31,7 +32,7 @@ def runExperiment(agent, **args):
     # hyperparameters
     npop = 50  # population size
     sigma = 0.1  # noise standard deviation
-    alpha = 0.003
+    alpha = 0.1
     alpha_decay = 0.95
     alpha_decay_step = 10
     alpha_decay_stop = 0.003
@@ -47,7 +48,7 @@ def runExperiment(agent, **args):
         if i % alpha_decay_step == 0 and alpha >= alpha_decay_stop:
             alpha *= alpha_decay
 
-        rewards.append(f(agent, w, **args))
+        rewards.append(f(agent, w, i, **args))
         # print current fitness with the population average
         if i % 1 == 0:
             print('epoch %d. w: %s, reward: %f' % (i, str(w), rewards[i]))
@@ -57,8 +58,8 @@ def runExperiment(agent, **args):
         R = np.zeros(npop)
         for j in range(npop):
             w_try = w + sigma * N[j]  # jitter w using gaussian of sigma 0.1
-            R[j] = f(agent, w_try, **args)  # evaluate the jittered version
-
+            R[j] = f(agent, w_try, i, **args)  # evaluate the jittered version
+        print('epoch {}. : rewards: {}'.format(i, R))
         # standardize the rewards to have a gaussian distribution
         A = (R - np.mean(R))
         stdev = np.std(R)
