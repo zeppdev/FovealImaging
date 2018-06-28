@@ -41,14 +41,14 @@ def runExperiment(agent, **args):
     start_time = time.time()
 
     # hyperparameters
-    npop = 30  # population size
+    npop = 1  # population size
     sigma = 0.1  # noise standard deviation
     alpha = 0.1
     alpha_decay = 0.95
     alpha_decay_step = 10
     alpha_decay_stop = 0.003
 
-    nr_epochs = 100
+    nr_epochs = 11
     weights_size = agent.get_weights_size()
 
     w = np.random.randn(weights_size)  # our initial guess is random
@@ -82,11 +82,21 @@ def runExperiment(agent, **args):
         # is just an efficient way to sum up all the rows of the noise matrix N,
         # where each row N[j] is weighted by A[j]
         w = w + alpha / (npop * sigma) * np.dot(N.T, A)
+        res_directory = "results/"
+
+
         if i % 5 == 0:
             weights.append(w)
 
-    res_directory = "results/"
-    run_identifier = "pop" + str(npop) + "_" + str(time.time())[-5:]
+            #Intermediate Results
+
+            run_identifier = "intermediate_pop" + str(npop) + "_" + 'epoch' + str(i) + '_' + str(time.time())[-5:]
+            pickle.dump(weights, open(res_directory + run_identifier + ".p", "wb"))
+            np.savetxt(res_directory + run_identifier + ".txt", rewards, newline='\r\n')
+
+
+    # Final Results
+    run_identifier = "final_pop" + str(npop) + "_" + 'epoch' + str(i) + '_' + str(time.time())[-5:]
     pickle.dump(weights, open(res_directory + run_identifier + ".p", "wb"))
     np.savetxt(res_directory + run_identifier + ".txt", rewards, newline='\r\n')
 
@@ -94,3 +104,19 @@ def runExperiment(agent, **args):
     print("--- Experiment ran for %s seconds ---" % (time.time() - start_time))
     plt.plot(rewards)
     plt.show()
+
+
+def load_results(filename):
+    with open(filename, 'rb') as f:
+        results = pickle.load(f)
+        return results
+
+
+def recreate_images(agent, weights, **args):
+    agent.set_weights(np.array(weights).T)
+    agent.visualize(epoch=None)
+
+
+# if __name__ == '__main__':
+    # weights = load_results('../results/intermediate_pop1_79133.p')
+    # recreate_images(weights)
