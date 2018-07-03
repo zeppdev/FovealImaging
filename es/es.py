@@ -41,26 +41,27 @@ def runExperiment(agent, **args):
     start_time = time.time()
 
     # hyperparameters
-    npop = 1  # population size
+    npop = 50  # population size
     sigma = 0.1  # noise standard deviation
-    alpha = 0.1
+    alpha = 0.03
     alpha_decay = 0.95
     alpha_decay_step = 10
     alpha_decay_stop = 0.003
 
-    nr_epochs = 11
-    weights_size = agent.get_weights_size()
+    nr_epochs = 200
+    weights_size = agent().get_weights_size()
 
     w = np.random.randn(weights_size)  # our initial guess is random
     # rewards per epoch
     rewards = []
     weights = []
     for i in range(nr_epochs):
+        a = agent()
         if i % alpha_decay_step == 0 and alpha >= alpha_decay_stop:
             alpha *= alpha_decay
 
-        rewards.append(f(agent, w, i, **args))
-        agent.visualize(i)
+        rewards.append(f(a, w, i, **args))
+        a.visualize(i)
 
         # print current fitness with the population average
         if i % 1 == 0:
@@ -70,8 +71,9 @@ def runExperiment(agent, **args):
         N = np.random.randn(npop, weights_size)  # samples from a normal distribution N(0,1)
         R = np.zeros(npop)
         for j in range(npop):
+            a = agent()
             w_try = w + sigma * N[j]  # jitter w using gaussian of sigma 0.1
-            R[j] = f(agent, w_try, i, **args)  # evaluate the jittered version
+            R[j] = f(a, w_try, i, **args)  # evaluate the jittered version
         print('epoch {}. : rewards: {}'.format(i, R))
         # standardize the rewards to have a gaussian distribution
         A = (R - np.mean(R))

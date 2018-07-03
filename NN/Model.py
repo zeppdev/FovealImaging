@@ -21,13 +21,13 @@ class Model():
         self.k_size = 8
 
         self.rnn_timesteps = 4
-        self.rnn_layers = [150, 150]
+        self.rnn_layers = [256, 256]
         self.rnn_activation = 'relu'
 
         self.with_zoom = False
         self.control_output = 3 if self.with_zoom else 2
 
-        self.batch_size = 128
+        self.batch_size = 120
         self.path_to_images = "data/mnist/mnist.pkl"
         self.image_size = 28
         self.nr_of_classes = 10
@@ -50,12 +50,12 @@ class Model():
         self.rnn_model.add(SimpleRNN(self.rnn_layers[0], activation=self.rnn_activation,
                                      input_shape=(self.rnn_timesteps, self.k_size ** 2), return_sequences=True))
         self.rnn_model.add(SimpleRNN(self.rnn_layers[1], activation=self.rnn_activation))
-        self.rnn_model.summary()
+        # self.rnn_model.summary()
 
         self.control = Sequential([Dense(units=self.control_output, input_dim=self.rnn_layers[-1], use_bias=False)])
-        self.control.summary()
+        # self.control.summary()
         self.classifier = Sequential([Dense(units=self.nr_of_classes, input_dim=self.rnn_layers[-1], use_bias=False)])
-        self.classifier.summary()
+        # self.classifier.summary()
 
     def init_image_loader(self):
         self.train_x, self.train_y, self.test_x, self.test_y = mnist_loader.load(self.path_to_images)
@@ -103,8 +103,7 @@ class Model():
                 for n in range(self.rnn_timesteps):
                     k = self.kernel_weights
 
-                    glimpse_ = GlimpseGenerator().get_glimpse(img, self.lattice[0], self.lattice[1], k[0], k[1], k[2],
-                                                              k[2])
+                    glimpse_ = GlimpseGenerator().get_glimpse(img, self.lattice[0], self.lattice[1], k[0], k[1], k[2])
                     # print("Glimpse:")
                     # print(glimpse_)
                     K.set_value(glimpse, glimpse_.reshape((1, 1, self.k_size ** 2)))
@@ -122,6 +121,7 @@ class Model():
                     # print(np.argmax(class_out))
                     # print(control_out)
                     true_positives += np.argmax(class_out) == self.train_y[i]
+        K.clear_session()
         # TODO - simplest scoring right now - we probably want to change this to reward guessing quicker
         self.accuracy = true_positives / (self.batch_size * self.rnn_timesteps)
         # print("acc: {}".format(self.accuracy))
