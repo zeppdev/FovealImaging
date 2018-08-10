@@ -8,6 +8,9 @@ import pickle
 
 import time
 
+from datetime import date, datetime
+
+from NN.Model import Model
 from image_processing.draw import create_lattice
 
 LOGGING_ON = False
@@ -55,6 +58,10 @@ def runExperiment(agent, **args):
     # rewards per epoch
     rewards = []
     weights = []
+
+    res_directory = "results/{}_{}/".format(datetime.today().date().isoformat(), str(time.time())[-5:])
+    os.makedirs(os.path.dirname(res_directory), exist_ok=True)
+
     for i in range(nr_epochs):
         a = agent()
         if i % alpha_decay_step == 0 and alpha >= alpha_decay_stop:
@@ -84,21 +91,19 @@ def runExperiment(agent, **args):
         # is just an efficient way to sum up all the rows of the noise matrix N,
         # where each row N[j] is weighted by A[j]
         w = w + alpha / (npop * sigma) * np.dot(N.T, A)
-        res_directory = "results/"
-
 
         if i % 5 == 0:
             weights.append(w)
 
             #Intermediate Results
 
-            run_identifier = "intermediate_pop" + str(npop) + "_" + 'epoch' + str(i) + '_' + str(time.time())[-5:]
+            run_identifier = "intermediate_pop" + str(npop) + "_" + 'epoch' + str(i)
             pickle.dump(weights, open(res_directory + run_identifier + ".p", "wb"))
             np.savetxt(res_directory + run_identifier + ".txt", rewards, newline='\r\n')
 
 
     # Final Results
-    run_identifier = "final_pop" + str(npop) + "_" + 'epoch' + str(i) + '_' + str(time.time())[-5:]
+    run_identifier = "final_pop" + str(npop) + "_" + 'epoch' + str(nr_epochs)
     pickle.dump(weights, open(res_directory + run_identifier + ".p", "wb"))
     np.savetxt(res_directory + run_identifier + ".txt", rewards, newline='\r\n')
 
@@ -114,11 +119,12 @@ def load_results(filename):
         return results
 
 
-def recreate_images(agent, weights, **args):
+def recreate_images(agent, weights, file, **args):
     agent.set_weights(np.array(weights).T)
-    agent.visualize(epoch=None)
+    agent.visualize(epoch=None, filename=file)
 
 
-# if __name__ == '__main__':
-    # weights = load_results('../results/intermediate_pop1_79133.p')
-    # recreate_images(weights)
+if __name__ == '__main__':
+    weights = load_results('results/2018-08-09/intermediate_pop50_epoch150_90874.p')
+    agent = Model()
+    recreate_images(agent, weights[0], file='test_results.png')
