@@ -10,6 +10,10 @@ from keras.layers import RNN, Dense, SimpleRNN, Masking, LSTM, TimeDistributed
 from image_processing import mnist_loader
 from image_processing.GlimpseGenerator import GlimpseGenerator
 
+import os
+import tensorflow as tf
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 class Model():
 
     def __init__(self, logging=False):
@@ -95,7 +99,12 @@ class Model():
     def train(self, epoch=None):
         glimpse = K.variable(np.zeros((1, 1, self.k_size ** 2)))
         true_positives = 0
-        with K.tf.Session() as sess:
+        # gpu_options = K.tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
+        config = K.tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+
+        # config.log_device_placement = True
+        with K.tf.Session(config=config) as sess:
             sess.run(K.tf.global_variables_initializer())
             indices = range((epoch * self.batch_size) % len(self.train_x), ((epoch + 1) * self.batch_size ) % len(self.train_x))
             for i in indices:
@@ -129,12 +138,14 @@ class Model():
     def test(self):
         pass
 
-    def visualize(self, epoch):
+    def visualize(self, epoch, filename=None):
         scale = 20
         img = np.zeros((scale *self.image_size, scale*self.image_size, 3) ,np.uint8)
         for i in self.kernel_weights.T:
             img = cv2.circle(img, (int((self.image_size / 2 - int(i[0])) * scale), int((self.image_size / 2 - int(i[1])) * scale)), abs(int(i[2] * scale)), (0, 0, 255), -1)
-        cv2.imwrite("results/lattice-epoch_{}-{}.png".format(epoch, str(time.time())[-5:]), img)
+        if filename is None:
+            filename = "results/lattice-epoch_{}-{}.png".format(epoch, str(time.time())[-5:])
+        cv2.imwrite(filename, img)
         # cv2.waitKey(0)
 
 
