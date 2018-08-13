@@ -31,7 +31,7 @@ class Model():
         self.with_zoom = False
         self.control_output = 3 if self.with_zoom else 2
 
-        self.batch_size = 120
+        self.batch_size = 64
         self.path_to_images = "data/mnist/mnist.pkl"
         self.image_size = 28
         self.nr_of_classes = 10
@@ -83,6 +83,10 @@ class Model():
         w = self.control.get_weights()
         self.control.set_weights([self.control_weights])
         self.classifier.set_weights([self.classifier_weights])
+
+
+    def set_batch_size(self, batch_size):
+        self.batch_size = batch_size
 
     def get_weights_size(self):
         return self.weights_size
@@ -138,13 +142,13 @@ class Model():
     def test(self):
         pass
 
-    def visualize(self, epoch, filename=None):
+    def visualize(self, epoch, res_directory=None, filename=None):
         scale = 20
         img = np.zeros((scale *self.image_size, scale*self.image_size, 3) ,np.uint8)
         for i in self.kernel_weights.T:
             img = cv2.circle(img, (int((self.image_size / 2 - int(i[0])) * scale), int((self.image_size / 2 - int(i[1])) * scale)), abs(int(i[2] * scale)), (0, 0, 255), -1)
         if filename is None:
-            filename = "results/lattice-epoch_{}-{}.png".format(epoch, str(time.time())[-5:])
+            filename = res_directory + "lattice-epoch_{}-{}.png".format(epoch, str(time.time())[-5:])
         cv2.imwrite(filename, img)
         # cv2.waitKey(0)
 

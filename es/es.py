@@ -44,14 +44,15 @@ def runExperiment(agent, **args):
     start_time = time.time()
 
     # hyperparameters
-    npop = 50  # population size
+    npop = 30  # population size
     sigma = 0.1  # noise standard deviation
-    alpha = 0.03
+    alpha = 0.003
     alpha_decay = 0.95
     alpha_decay_step = 10
     alpha_decay_stop = 0.003
-
-    nr_epochs = 200
+    # Nr of images processed in each epoch
+    batch_size = 20
+    nr_epochs = 3000
     weights_size = agent().get_weights_size()
 
     w = np.random.randn(weights_size)  # our initial guess is random
@@ -60,15 +61,17 @@ def runExperiment(agent, **args):
     weights = []
 
     res_directory = "results/{}_{}/".format(datetime.today().date().isoformat(), str(time.time())[-5:])
+
     os.makedirs(os.path.dirname(res_directory), exist_ok=True)
 
     for i in range(nr_epochs):
         a = agent()
-        if i % alpha_decay_step == 0 and alpha >= alpha_decay_stop:
-            alpha *= alpha_decay
+        a.set_batch_size(batch_size)
 
         rewards.append(f(a, w, i, **args))
-        a.visualize(i)
+
+        if i % 5 == 0:
+            a.visualize(i, res_directory=res_directory)
 
         # print current fitness with the population average
         if i % 1 == 0:
@@ -79,6 +82,7 @@ def runExperiment(agent, **args):
         R = np.zeros(npop)
         for j in range(npop):
             a = agent()
+            a.set_batch_size(batch_size)
             w_try = w + sigma * N[j]  # jitter w using gaussian of sigma 0.1
             R[j] = f(a, w_try, i, **args)  # evaluate the jittered version
         print('epoch {}. : rewards: {}'.format(i, R))
@@ -92,7 +96,10 @@ def runExperiment(agent, **args):
         # where each row N[j] is weighted by A[j]
         w = w + alpha / (npop * sigma) * np.dot(N.T, A)
 
-        if i % 5 == 0:
+        if i % alpha_decay_step == 0 and alpha > alpha_decay_stop:
+            alpha *= alpha_decay
+
+        if i % 20 == 0:
             weights.append(w)
 
             #Intermediate Results
