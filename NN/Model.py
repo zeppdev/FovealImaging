@@ -10,6 +10,7 @@ from keras.layers import RNN, Dense, SimpleRNN, Masking, LSTM, TimeDistributed
 from image_processing import mnist_loader
 from image_processing.GlimpseGenerator import GlimpseGenerator
 
+from matplotlib import pyplot as plt
 import os
 import tensorflow as tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -36,17 +37,22 @@ class Model():
         self.image_size = 28
         self.nr_of_classes = 10
 
-        self.init_image_loader()
-        self.init_weight_sizes()
-        self.init_networks()
+        # gpu_options = K.tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
+        config = K.tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        self.sess = K.tf.Session(config=config)
+        with self.sess.as_default():
+            self.glimpse = K.variable(np.zeros((1, 1, self.k_size ** 2)))
+            self.init_image_loader()
+            self.init_networks()
+            self.init_weight_sizes()
 
     def init_weight_sizes(self):
         # 3 because we need x, y coordinates and std in both directions
         self.kernel_weight_size = 3 * self.k_size ** 2
-        self.rnn_weight_size = self.k_size ** 2 * self.rnn_layers[0] + self.rnn_layers[0] * self.rnn_layers[1]
-        # x, y, (zoom) of full lattice
-        self.control_weight_size = self.rnn_layers[1] * self.control_output
-        self.classifier_weight_size = self.rnn_layers[1] * self.nr_of_classes
+        self.rnn_weight_size = sum([w.size for w in self.rnn_model.get_weights()])
+        self.control_weight_size = sum([w.size for w in self.control_model.get_weights()])
+        self.classifier_weight_size = sum([w.size for w in self.classifier_model.get_weights()])
         self.weights_size = self.kernel_weight_size + self.rnn_weight_size + self.control_weight_size + self.classifier_weight_size
 
     def init_networks(self):
@@ -56,10 +62,11 @@ class Model():
         self.rnn_model.add(SimpleRNN(self.rnn_layers[1], activation=self.rnn_activation))
         # self.rnn_model.summary()
 
-        self.control = Sequential([Dense(units=self.control_output, input_dim=self.rnn_layers[-1], use_bias=False)])
-        # self.control.summary()
-        self.classifier = Sequential([Dense(units=self.nr_of_classes, input_dim=self.rnn_layers[-1], use_bias=False)])
-        # self.classifier.summary()
+        self.control_model = Sequential([Dense(units=self.control_output, input_dim=self.rnn_layers[-1])])
+        # self.control_model.summary()
+        self.classifier_model = Sequential([Dense(units=self.nr_of_classes, input_dim=self.rnn_layers[-1])])
+        # self.classifier_model.summary()
+        self.sess.run(K.tf.global_variables_initializer())
 
     def init_image_loader(self):
         self.train_x, self.train_y, self.test_x, self.test_y = mnist_loader.load(self.path_to_images)
@@ -68,22 +75,28 @@ class Model():
 
     # If init_kernel, we ignore the input and set the kernel positions
     def set_weights(self, weights):
-        k, r, co, cl = self.kernel_weight_size, self.rnn_weight_size, self.control_weight_size, self.classifier_weight_size
-        # 3, because x, y, std
-        self.kernel_weights = np.reshape(weights[:k], (3, -1))
-        rnn_weights = weights[k: k + r]
-        self.rnn_weights = []
-        w = self.rnn_model.get_weights()
-        self.rnn_weights.append(np.reshape(rnn_weights[:w[0].size], w[0].shape))
-        self.rnn_weights.append(np.reshape(rnn_weights[w[0].size:], w[1].shape))
-        self.control_weights = weights[k + r: k + r + co].reshape(self.rnn_layers[-1], self.control_output)
-        self.classifier_weights = weights[k + r + co: k + r + co + cl].reshape(self.rnn_layers[-1], -1)
+        with self.sess.as_default():
+            k, r, co, cl = self.kernel_weight_size, self.rnn_weight_size, self.control_weight_size, self.classifier_weight_size
+            # 3, because x, y, std
+            self.kernel_weights = np.reshape(weights[:k], (3, -1))
+            w1 = k
 
-        self.rnn_model.set_weights(self.rnn_weights)
-        w = self.control.get_weights()
-        self.control.set_weights([self.control_weights])
-        self.classifier.set_weights([self.classifier_weights])
+            self.rnn_weights = []
+            for w in self.rnn_model.get_weights():
+                self.rnn_weights.append(np.reshape(weights[w1:w1+w.size], w.shape))
+                w1 += w.size
 
+            self.control_weights = []
+            for w in self.control_model.get_weights():
+                self.control_weights.append(np.reshape(weights[w1:w1+w.size], w.shape))
+                w1 += w.size
+            self.classifier_weights = []
+            for w in self.classifier_model.get_weights():
+                self.classifier_weights.append(np.reshape(weights[w1:w1+w.size], w.shape))
+                w1 += w.size
+            self.rnn_model.set_weights(self.rnn_weights)
+            self.control_model.set_weights(self.control_weights)
+            self.classifier_model.set_weights(self.classifier_weights)
 
     def set_batch_size(self, batch_size):
         self.batch_size = batch_size
@@ -101,15 +114,8 @@ class Model():
         return self.accuracy
 
     def train(self, epoch=None):
-        glimpse = K.variable(np.zeros((1, 1, self.k_size ** 2)))
         true_positives = 0
-        # gpu_options = K.tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
-        config = K.tf.ConfigProto()
-        config.gpu_options.allow_growth = True
-
-        # config.log_device_placement = True
-        with K.tf.Session(config=config) as sess:
-            sess.run(K.tf.global_variables_initializer())
+        with self.sess.as_default():
             indices = range((epoch * self.batch_size) % len(self.train_x), ((epoch + 1) * self.batch_size ) % len(self.train_x))
             for i in indices:
                 img = self.train_x[i]
@@ -119,22 +125,21 @@ class Model():
                     glimpse_ = GlimpseGenerator().get_glimpse(img, self.lattice[0], self.lattice[1], k[0], k[1], k[2])
                     # print("Glimpse:")
                     # print(glimpse_)
-                    K.set_value(glimpse, glimpse_.reshape((1, 1, self.k_size ** 2)))
+                    K.set_value(self.glimpse, glimpse_.reshape((1, 1, self.k_size ** 2)))
                     # Get the RNN params to feed to control or classifier network
-                    rnn_out = self.rnn_model.call(glimpse)
+                    rnn_out = self.rnn_model.call(self.glimpse)
                     # print("RNN weights:")
                     # print(rnn_out.eval())
-                    control_out = self.control.call(rnn_out)
+                    control_out = self.control_model.call(rnn_out)
                     # print(type(control_out))
                     control_out = control_out.eval()
-                    class_out = self.classifier.call(rnn_out).eval()
+                    class_out = self.classifier_model.call(rnn_out).eval()
                     self.lattice[0] = control_out[0][0]
                     self.lattice[1] = control_out[0][1]
                     # print(class_out)
-                    # print(np.argmax(class_out))
                     # print(control_out)
                     true_positives += np.argmax(class_out) == self.train_y[i]
-        K.clear_session()
+        # K.clear_session()
         # TODO - simplest scoring right now - we probably want to change this to reward guessing quicker
         self.accuracy = true_positives / (self.batch_size * self.rnn_timesteps)
         # print("acc: {}".format(self.accuracy))

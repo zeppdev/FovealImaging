@@ -46,14 +46,15 @@ def runExperiment(agent, **args):
     # hyperparameters
     npop = 30  # population size
     sigma = 0.1  # noise standard deviation
-    alpha = 0.003
-    alpha_decay = 0.95
+    alpha = 0.02
+    alpha_decay = 0.97
     alpha_decay_step = 10
     alpha_decay_stop = 0.003
     # Nr of images processed in each epoch
     batch_size = 20
     nr_epochs = 3000
-    weights_size = agent().get_weights_size()
+    a = agent()
+    weights_size = a.get_weights_size()
 
     w = np.random.randn(weights_size)  # our initial guess is random
     # rewards per epoch
@@ -65,9 +66,7 @@ def runExperiment(agent, **args):
     os.makedirs(os.path.dirname(res_directory), exist_ok=True)
 
     for i in range(nr_epochs):
-        a = agent()
         a.set_batch_size(batch_size)
-
         rewards.append(f(a, w, i, **args))
 
         if i % 5 == 0:
@@ -81,8 +80,6 @@ def runExperiment(agent, **args):
         N = np.random.randn(npop, weights_size)  # samples from a normal distribution N(0,1)
         R = np.zeros(npop)
         for j in range(npop):
-            a = agent()
-            a.set_batch_size(batch_size)
             w_try = w + sigma * N[j]  # jitter w using gaussian of sigma 0.1
             R[j] = f(a, w_try, i, **args)  # evaluate the jittered version
         print('epoch {}. : rewards: {}'.format(i, R))
@@ -105,7 +102,7 @@ def runExperiment(agent, **args):
             #Intermediate Results
 
             run_identifier = "intermediate_pop" + str(npop) + "_" + 'epoch' + str(i)
-            pickle.dump(weights, open(res_directory + run_identifier + ".p", "wb"))
+            pickle.dump(w, open(res_directory + run_identifier + ".p", "wb"))
             np.savetxt(res_directory + run_identifier + ".txt", rewards, newline='\r\n')
 
 
