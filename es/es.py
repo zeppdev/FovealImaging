@@ -14,8 +14,7 @@ from NN.Model import Model
 from image_processing.draw import create_lattice
 
 LOGGING_ON = False
-np.random.seed(6)
-
+#np.random.seed(6)
 
 # the function we want to optimize
 def f(agent, w, epoch, **args):
@@ -25,7 +24,7 @@ def f(agent, w, epoch, **args):
     # ... 3) sum up and return the total reward
 
     # Do not initialize the kernel on 1st epoch
-    if epoch == 0:
+    if epoch == 0 and not args['restart']:
         # initial settings
         lattice = create_lattice(1, 1, 2, agent.k_size)
         # print(lattice)
@@ -56,7 +55,13 @@ def runExperiment(agent, **args):
     a = agent()
     weights_size = a.get_weights_size()
 
-    w = np.random.randn(weights_size)  # our initial guess is random
+
+    if args['restart']:
+        w = args['weights']
+        # We assume alpha having already decayed to minimum during first run
+        alpha = alpha_decay_stop
+    else:
+        w = np.random.randn(weights_size)
     # rewards per epoch
     rewards = []
     weights = []
