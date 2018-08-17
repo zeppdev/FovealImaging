@@ -29,5 +29,5 @@ venv.bak/
 .spyproject
 .idea/
 *.gz
-data/
+# data/
 results/
