@@ -7,6 +7,6 @@ To run the experiment:
 * Install Python 3 and Pip.
 * pip3 install -r requirements.txt
 
-* (Optional) modify NES or model parameters in es.py or NN/Model.py
+* (Optional) modify NES or model parameters in es/es.py or NN/Model.py
 
 * python3 run.py
